@@ -167,25 +167,3 @@ dev.off()
 
 
 
-#####cluster 13 unknown#######
-EC.markers <- FindAllMarkers(ORG_CT.integrated, only.pos = TRUE, min.pct = 0.25, logfc.threshCT = 0.25)
-EC.markers %>% group_by(cluster) %>% top_n(n = 2, wt = avg_logFC)
-top10 <- EC.markers %>% group_by(cluster) %>% top_n(n = 10, wt = avg_logFC)
-
-cluster13.markers <- FindMarkers(ORG_CT.integrated, ident.1 = 13, min.pct = 0.25)
-head(cluster13.markers, n=5)
-#####add celltype information in umap#######
-new.cluster.ids <- c("C_V_1","C_A_1","Capillary_1","C_V_2","C_A_2","Venous","Interferon","Arterial_1","Capillary_2",
-	"Erythroid","Arterial_2","Capillary_3","Choroid_plexus","Pericyte","Microglia_1","Microglia_2","Lymphatics","SMC")
-
-names(new.cluster.ids) <- levels(ORG_CT.integrated)
-ORG_CT.integrated <- RenameIdents(ORG_CT.integrated, new.cluster.ids)
-pdf("/md01/nieyg/project/BBB/YMO_results/plot/Allcell_add_celltype_umap.pdf")
-DimPlot(ORG_CT.integrated, reduction = "umap", label = TRUE, pt.size = 0.5) + labs(title = "Brain ECs with other celltypes")
-saveRDS(ORG_CT.integrated, file = "BBB_YM12O.rds")
-pdf("/md01/nieyg/project/BBB/YMO_results/plot/Allcell_ECmarkers_umap.pdf")
-FeaturePlot(ORG_CT.integrated, features = c("Pecam1","Flt1","Fn1","Tek"))
-FeaturePlot(ORG_CT.integrated, features = c("Abcb1a","Egfl7","Eng","Igfbp7"))
-FeaturePlot(ORG_CT.integrated, features = c("Kdr","Ptprb","Rgs5","Slco1a4"))
-dev.off()
-
