@@ -3,6 +3,19 @@ library(Seurat)
 library(stringr) 
 library(ggplot2)
 library(dplyr)
+set.seed(1234)
+ORG_CT.integrated<- readRDS("./ORG_CT_integrated.rds")
+
+DefaultAssay(ORG_CT.integrated) <- "integrated"
+ORG_CT.integrated <- FindNeighbors(object = ORG_CT.integrated, dims = 1:25)
+ORG_CT.integrated <- FindClusters(object = ORG_CT.integrated, resolution = 1.5)
+ORG_CT.integrated <- RunUMAP(object = ORG_CT.integrated, dims = 1:25)
+ORG_CT.integrated <- RunTSNE(object = ORG_CT.integrated, dims = 1:25)
+
+table(ORG_CT.integrated@active.ident)
+
+dev
+DefaultAssay(ORG_CT.integrated) <- "RNA"
 
 #cluster annotation
 #基因占比图
@@ -25,23 +38,27 @@ markerGenes  <- c(
 "Gfpt2","Hk2","Ddr2","Slc1a7","Adamtsl3","Layn","Cd248","Mcam","Fgfr1" # Pericyte
 )
 
-label<- c(rep("CM",7),rep("MP",11),rep("T",8),rep("B",6),rep("DC",6),rep("monocyte",1),rep("Granulocy",2),rep("NK",2),rep("Glial",2),rep("EC",13),
+# mouse geneid to human geneid 
+library(homologene)
+gene_list<- mouse2human(markerGenes)
+markerGenes_human<- gene_list$humanGene
+label<- c(rep("CM",7),rep("MP",11),rep("T",8),rep("B",6),
+    rep("DC",6),rep("monocyte",1),rep("Granulocy",2),
+    rep("NK",2),rep("Glial",2),rep("EC",13),
 	rep("FB",8),rep("SMC",5),rep("Epi",9),rep("Pericyte",9))
 DefaultAssay(ORG_CT.integrated)<-"RNA"
 pdf("./02_annotation/ORG_cluster-annotation-all_celltype.pdf",width=20,height=8)
-p<-DotPlot(ORG_CT.integrated, features = markerGenes,dot.scale = 3)+theme(axis.text.x=element_text(size=8,angle=90,hjust=1,vjust=0.5))
+p<-DotPlot(ORG_CT.integrated, features = markerGenes_human,dot.scale = 3)+theme(axis.text.x=element_text(size=8,angle=90,hjust=1,vjust=0.5))
 p
 p&scale_x_discrete(labels=label)
 dev.off()
-pdf("./02_annotation/ORG_cluster-annotation-all_celltype_cluster.pdf",width=20,height=8)
-Clustered_DotPlot(seurat_object = ORG_CT.integrated, flip=T,features = markerGenes,k=11)
-dev.off()
+
 
 # make the tree 
 
 # make the trans dist tree 
 object <- ORG_CT.integrated
-embeddings <- Embeddings(object = object, reduction = "lsi")[,1:50]
+embeddings <- Embeddings(object = object, reduction = "pca")[,1:50]
 data.dims <- lapply(X = levels(x = object), FUN = function(x) {
     cells <- WhichCells(object = object, idents = x)
     if (length(x = cells) == 1) {
@@ -56,7 +73,7 @@ cosine_dist <- as.dist(1-cosine(data.dims))
 data.tree <- ape::as.phylo(x = hclust(d = cosine_dist))
 library(ggtree);
 
-pdf("./03_all_celltype/AR3-combined-tree-cosine.pdf",width=6,height=6)
+pdf("./02_annotation/ORG_cluster-tree-cosine.pdf",width=6,height=6)
 ggtree(data.tree,layout = "circular") + geom_tiplab()+ geom_treescale()
 dev.off()
 
